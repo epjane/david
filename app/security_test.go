@@ -302,7 +302,9 @@ func TestHandle(t *testing.T) {
 				&App{
 					Config: &Config{Users: map[string]*UserInfo{
 						"foo": {
-							Password: GenHash([]byte("password")),
+							Password:    GenHash([]byte("password")),
+							Permissions: "crud",
+							Crud:        &CrudType{Crud: "crud", Create: true, Read: true, Update: true, Delete: true},
 						},
 					}},
 					Handler: &webdav.Handler{
