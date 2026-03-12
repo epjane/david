@@ -41,17 +41,41 @@ The project david is an extension from the project [dave](https://github.com/mic
 
 #### Setup
 
-3. Clone the repository (or your fork)
+1. Make sure to have [Golang installed](https://go.dev/doc/install)
+2. Clone the repository (or your fork)
 
 ```sh
 git clone https://github.com/audstanley/david
 ```
 
-Make sure to have [Golang installed](https://go.dev/doc/install). than run:
+3. Build and install the binaries
+
 ```sh
 cd cmd/david && go build . && mv ./david ~/go/bin/david
 cd ../bcpt && go build . && mv bcpt ~/go/bin/bcpt && cd ../..
 ```
+
+Alternatively, use mage to build:
+
+```sh
+mage Build
+```
+
+This will create binaries in the `dist/` directory.
+
+#### Command Line Flags
+
+The `david` binary supports the following command line flags to override configuration:
+
+```sh
+david --config /path/to/config.yaml --host 127.0.0.1 --port 9000
+```
+
+- `--config`: Path to configuration file (optional)
+- `--host`: Override host address from config
+- `--port`: Override port from config
+
+If not provided, the server will use values from the configuration file.
 
 ## Configuration
 
@@ -232,7 +256,7 @@ config entries:
 
 ```yaml
 log:
-  production: true # All logs will be in NDJSON format. If set to false, than after parsing the config file, the logging mode will be set to TEXT
+  production: false
   debug: true
   error: true
   create: true
@@ -242,15 +266,23 @@ log:
 ...
 ```
 
+The `production` setting controls the log formatter:
+- When `false`: Uses human-readable text format with timestamps
+- When `true`: Uses JSON format for structured logging
+
 Be aware, that the log pattern of an attached tty differs from the log pattern of a detached tty.
 
-Example of an attached tty:
+Example of an attached tty (text format):
 
 	INFO[0000] Server is starting and listening              address=0.0.0.0 port=8000 security=none
 
-Example of a detached tty:
+Example of a detached tty (timestamp format):
 
 	time="2018-04-14T20:46:00+02:00" level=info msg="Server is starting and listening" address=0.0.0.0 port=8000 security=none
+
+Example of production mode (JSON format):
+
+	{"level":"info","msg":"Server is starting and listening","address":"0.0.0.0","port":"8000","security":"none"}
 
 ### Live reload
 

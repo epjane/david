@@ -358,3 +358,13 @@ func GenHash(password []byte) string {
 
 	return string(pw)
 }
+
+// GenHashFromPassword generates a bcrypt hashed password string with specified cost
+func GenHashFromPassword(password string, cost int) (string, error) {
+	pw, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(pw), nil
+}
