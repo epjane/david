@@ -471,8 +471,14 @@ Hashed Password (bcrypt): $2a$10$...
 
 # Generate with specific algorithm and cost
 dcrypt passwd --password "secret" --algorithm bcrypt --cost 12
-dcrypt passwd --password "secret" --algorithm argon2
-dcrypt passwd --password "secret" --algorithm scrypt
+
+# Generate argon2 hash with custom parameters
+dcrypt passwd --password "secret" --algorithm argon2 \
+  --argon2-memory 65536 --argon2-iterations 3 --argon2-parallelism 4
+
+# Generate scrypt hash with custom parameters
+dcrypt passwd --password "secret" --algorithm scrypt \
+  --scrypt-n 16384 --scrypt-r 8 --scrypt-p 1
 
 # Generate interactively
 dcrypt passwd

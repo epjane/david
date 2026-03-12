@@ -58,10 +58,13 @@ type HashAlgorithm interface {
 
 // HashParams contains configuration for all hash algorithms
 type HashParams struct {
-	BcryptCost int  `yaml:"bcrypt_cost" default:"10"`
-	ScryptN    uint `yaml:"scrypt_n" default:"16384"` // CPU/memory cost
-	ScryptR    uint `yaml:"scrypt_r" default:"8"`     // Block size
-	ScryptP    uint `yaml:"scrypt_p" default:"1"`     // Parallelism
+	BcryptCost        int    `yaml:"bcrypt_cost" default:"10"`
+	Argon2Memory      uint32 `yaml:"memory" default:"65536"` // KiB
+	Argon2Iterations  uint   `yaml:"iterations" default:"3"`
+	Argon2Parallelism uint   `yaml:"parallelism" default:"4"`
+	ScryptN           uint   `yaml:"scrypt_n" default:"16384"` // CPU/memory cost
+	ScryptR           uint   `yaml:"scrypt_r" default:"8"`     // Block size
+	ScryptP           uint   `yaml:"scrypt_p" default:"1"`     // Parallelism
 }
 
 // BcryptAlgorithm implements bcrypt hashing

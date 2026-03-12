@@ -44,14 +44,16 @@ hash:
     bcrypt_cost: 10  # Recommended: 10-14 (higher = slower but more secure)
     
     # argon2 parameters (used when algorithm: argon2)
-    # memory: 64           # MiB (recommended: 64-256)
+    # memory: 65536        # KiB (recommended: 65536-262144, i.e., 64-256 MiB)
     # iterations: 3        # Recommended: 2-4
     # parallelism: 4       # Recommended: 2-8
+    # CLI: dcrypt passwd --algorithm argon2 --argon2-memory 65536 --argon2-iterations 3 --argon2-parallelism 4
     
     # scrypt parameters (used when algorithm: scrypt)
     # scrypt_n: 16384      # CPU/memory cost (must be power of 2)
     # scrypt_r: 8          # Block size
     # scrypt_p: 1          # Parallelism
+    # CLI: dcrypt passwd --algorithm scrypt --scrypt-n 16384 --scrypt-r 8 --scrypt-p 1
 
 # Users with password hashes
 # Generate with: dcrypt passwd --password "your-password" --algorithm <alg>
