@@ -54,3 +54,7 @@ func readPassword() string {
 	fmt.Println()
 	return string(pw)
 }
+
+func GetReadPassword() func() string {
+	return readPassword
+}

@@ -332,3 +332,59 @@ func TestHandle(t *testing.T) {
 		})
 	}
 }
+
+func TestNewBasicAuthWebdavHandler(t *testing.T) {
+	cfg := createTestConfigForSecurity()
+	app := &App{Config: cfg}
+	handler := NewBasicAuthWebdavHandler(app)
+
+	if handler == nil {
+		t.Error("NewBasicAuthWebdavHandler returned nil")
+	}
+}
+
+func TestAuthWebdavHandlerFunc(t *testing.T) {
+	handlerFunc := authWebdavHandlerFunc(func(c context.Context, w http.ResponseWriter, r *http.Request, a *App) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	if handlerFunc == nil {
+		t.Error("authWebdavHandlerFunc is nil")
+	}
+}
+
+func TestHandleMethodNotAllowed(t *testing.T) {
+	req := httptest.NewRequest("DELETE", "/webdav/", nil)
+	w := httptest.NewRecorder()
+
+	handleMethodNotAllowed(req.Context(), w, req)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Expected 405, got %d", w.Code)
+	}
+}
+
+func TestServeHTTP(t *testing.T) {
+	handlerFunc := authWebdavHandlerFunc(func(c context.Context, w http.ResponseWriter, r *http.Request, a *App) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	req := httptest.NewRequest("GET", "/webdav/", nil)
+	w := httptest.NewRecorder()
+	ctx := context.Background()
+
+	cfg := createTestConfigForSecurity()
+	app := &App{Config: cfg}
+
+	handlerFunc.ServeHTTP(ctx, w, req, app)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func createTestConfigForSecurity() *Config {
+	cfg := createTestConfig("/tmp")
+	return cfg
+}

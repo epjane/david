@@ -277,9 +277,6 @@ Hashed Password: $2a$10$...
 - `-p, --password string` - Password to hash (required)
 - `-c, --cost int` - BCrypt cost factor (default 10)
 
-The password must be in form of a BCrypt hash. You can generate one calling the shipped cli
-tool `bcpt passwd`.
-
 If a subdirectory is configured for a user, the user is jailed within it and can't see anything
 that exists outside of this directory. If no subdirectory is configured for an user, the user
 can see and modify all files within the base directory.

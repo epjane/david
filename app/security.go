@@ -326,7 +326,6 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 // handle methods not allowed
 func handleMethodNotAllowed(ctx context.Context, w http.ResponseWriter, req *http.Request) {
 	log.WithField("method", req.Method).Debug("Method received")
-	w.Write([]byte("Method not allowed"))
 	w.WriteHeader(http.StatusMethodNotAllowed)
 }
 

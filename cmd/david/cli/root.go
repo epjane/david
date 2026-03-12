@@ -29,3 +29,14 @@ func Execute() {
 func GetRootCmd() *cobra.Command {
 	return rootCmd
 }
+
+func GetServerCmd() *cobra.Command {
+	var serverCmd *cobra.Command
+	for _, c := range rootCmd.Commands() {
+		if c.Use == "server" {
+			serverCmd = c
+			break
+		}
+	}
+	return serverCmd
+}

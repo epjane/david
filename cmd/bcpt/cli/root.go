@@ -19,3 +19,18 @@ func Execute() {
 		os.Exit(1)
 	}
 }
+
+func GetRootCmd() *cobra.Command {
+	return RootCmd
+}
+
+func GetPasswdCmd() *cobra.Command {
+	var passwdCmd *cobra.Command
+	for _, c := range RootCmd.Commands() {
+		if c.Use == "passwd" {
+			passwdCmd = c
+			break
+		}
+	}
+	return passwdCmd
+}
