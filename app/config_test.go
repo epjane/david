@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -147,4 +149,206 @@ log:
 	// **6. Return the Config Instance**
 	// Return the populated Config instance for further use in the test case.
 	return resultCfg
+}
+
+func TestGenHashFromPassword(t *testing.T) {
+	tests := []struct {
+		name      string
+		password  string
+		cost      int
+		wantError bool
+	}{
+		{
+			name:      "valid password with default cost",
+			password:  "testpassword",
+			cost:      10,
+			wantError: false,
+		},
+		{
+			name:      "valid password with high cost",
+			password:  "testpassword",
+			cost:      12,
+			wantError: false,
+		},
+		{
+			name:      "empty password",
+			password:  "",
+			cost:      10,
+			wantError: false,
+		},
+		{
+			name:      "password under bcrypt limit",
+			password:  "testpassword12345",
+			cost:      10,
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hash, err := GenHashFromPassword(tt.password, tt.cost)
+
+			if (err != nil) != tt.wantError {
+				t.Errorf("GenHashFromPassword() error = %v, wantError %v", err, tt.wantError)
+				return
+			}
+
+			if !tt.wantError {
+				if hash == "" {
+					t.Error("GenHashFromPassword() returned empty hash")
+				}
+
+				if len(hash) != 60 {
+					t.Errorf("GenHashFromPassword() returned hash of length %d, want 60", len(hash))
+				}
+
+				if hash[0] != '$' {
+					t.Errorf("GenHashFromPassword() returned hash starting with %q, want '$'", hash[0])
+				}
+
+				expectedPrefix := fmt.Sprintf("$2a$%02d$", tt.cost)
+				if !strings.HasPrefix(hash, expectedPrefix) {
+					t.Errorf("GenHashFromPassword() returned hash with prefix %q, want %q", hash[:8], expectedPrefix)
+				}
+			}
+		})
+	}
+}
+
+func TestHandleConfigUpdate(t *testing.T) {
+	tmpDir := t.TempDir()
+	configFile := filepath.Join(tmpDir, "config.yaml")
+
+	cfg := &Config{
+		Dir:   tmpDir,
+		Users: map[string]*UserInfo{},
+	}
+
+	err := os.WriteFile(configFile, []byte("address: \"127.0.0.1\"\n"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write config file: %v", err)
+	}
+
+	viper.Reset()
+	viper.SetConfigFile(configFile)
+	viper.SetConfigType("yaml")
+
+	err = viper.ReadInConfig()
+	if err != nil {
+		t.Fatalf("Failed to read config: %v", err)
+	}
+
+	cfg.handleConfigUpdate(fsnotify.Event{Name: configFile})
+}
+
+func TestUpdateConfig(t *testing.T) {
+	subdirOld := "/old"
+	subdirNew := "/new"
+	subdirTest := "/testuser"
+
+	tests := []struct {
+		name          string
+		existingUsers map[string]*UserInfo
+		newUser       *UserInfo
+		wantError     bool
+	}{
+		{
+			name:          "add new user",
+			existingUsers: map[string]*UserInfo{},
+			newUser: &UserInfo{
+				Password:    "$2a$10$testhash",
+				Subdir:      &subdirTest,
+				Permissions: "crud",
+			},
+			wantError: false,
+		},
+		{
+			name: "update existing user",
+			existingUsers: map[string]*UserInfo{
+				"testuser": {
+					Password:    "$2a$10$oldhash",
+					Subdir:      &subdirOld,
+					Permissions: "r",
+				},
+			},
+			newUser: &UserInfo{
+				Password:    "$2a$10$newhash",
+				Subdir:      &subdirNew,
+				Permissions: "crud",
+			},
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Users: tt.existingUsers,
+			}
+
+			newCfg := &Config{
+				Users: map[string]*UserInfo{"testuser": tt.newUser},
+			}
+
+			updateConfig(cfg, newCfg)
+
+			if _, ok := cfg.Users["testuser"]; !ok {
+				t.Errorf("updateConfig() failed to add/update user testuser")
+			}
+
+			if len(tt.existingUsers) > 0 {
+				if cfg.Users["testuser"].Password != tt.newUser.Password {
+					t.Errorf("updateConfig() password = %q, want %q", cfg.Users["testuser"].Password, tt.newUser.Password)
+				}
+			}
+		})
+	}
+}
+
+func TestCreateBaseAndUserDirectoriesIfNeeded(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	user1Subdir := "/user1"
+	user2Subdir := "/user2"
+
+	cfg := &Config{
+		Dir: tmpDir,
+		Users: map[string]*UserInfo{
+			"user1": {Subdir: &user1Subdir},
+			"user2": {Subdir: &user2Subdir},
+		},
+	}
+
+	os.RemoveAll(cfg.Dir)
+
+	cfg.createBaseAndUserDirectoriesIfNeeded()
+
+	if _, err := os.Stat(cfg.Dir); os.IsNotExist(err) {
+		t.Error("createBaseAndUserDirectoriesIfNeeded() failed to create base directory")
+	}
+
+	for _, user := range cfg.Users {
+		userPath := filepath.Join(cfg.Dir, *user.Subdir)
+		if _, err := os.Stat(userPath); os.IsNotExist(err) {
+			t.Errorf("createBaseAndUserDirectoriesIfNeeded() failed to create user directory %s", userPath)
+		}
+	}
+
+	cfg2 := &Config{
+		Dir:   filepath.Join(tmpDir, "test2"),
+		Users: nil,
+	}
+	os.RemoveAll(cfg2.Dir)
+
+	cfg2.createBaseAndUserDirectoriesIfNeeded()
+
+	cfg3 := &Config{
+		Dir: filepath.Join(tmpDir, "test3"),
+		Users: map[string]*UserInfo{
+			"emptyuser": {Subdir: new(string)},
+		},
+	}
+	os.RemoveAll(cfg3.Dir)
+
+	cfg3.createBaseAndUserDirectoriesIfNeeded()
 }
