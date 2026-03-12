@@ -168,6 +168,10 @@ func Resolve(ctx context.Context, name string, d Dir) string {
 	if dir == "" {
 		dir = "."
 	}
+	// Strip the URL prefix if configured.
+	if d.Config.Prefix != "" && strings.HasPrefix(name, d.Config.Prefix) {
+		name = strings.TrimPrefix(name, d.Config.Prefix)
+	}
 	// Obtain authentication information from the context.
 	authInfo := AuthFromContext(ctx)
 	// Check if user is authenticated and has configured subdirectory.
