@@ -1,3 +1,30 @@
+# david - Configuration Sample
+# ============================
+#
+# Password Hashing
+# ----------------
+# David supports multiple password hashing algorithms for flexibility and security.
+# See // For more information on password hashing, see:
+#     - OWASP Password Storage Cheat Sheet
+#
+# Supported algorithms:
+#   - bcrypt    (default): Battle-tested, widely compatible, ~67ms/hash
+#   - argon2id  : Modern, memory-hard, fastest verification <1µs
+#   - scrypt    : Memory-hard, GPU resistant, ~82ms/hash
+#
+# Generate hashes with: dcrypt passwd --password "your-password" --algorithm <alg>
+# Measure performance on your system: dcrypt benchmark
+#
+# Example benchmarks (Linux, Go 1.23, 100 iterations):
+#   Algorithm   Generate    Verify        Memory
+#   bcrypt      66.93 ms    63.08 ms      ~4KB
+#   argon2      81.06 ms    <1 µs         ~64MB
+#   scrypt      81.64 ms    81.66 ms      ~128MB
+#
+# Note: SHA-256/SHA-512 are NOT supported for password hashing. These algorithms
+# are designed for general-purpose use and are intentionally fast, making them
+# unsuitable for password storage (see OWASP Password Storage Cheat Sheet).
+
 # Address and port
 address: '0.0.0.0'
 port: 8000
@@ -5,29 +32,69 @@ port: 8000
 # Content directory
 dir: '/tmp'
 
-# Basic auth
+# Basic auth realm
 realm: 'david'
 
-# Users
+# Hash algorithm configuration
+hash:
+  # Choose one: bcrypt, argon2, or scrypt
+  algorithm: bcrypt
+  params:
+    # bcrypt parameters
+    bcrypt_cost: 10  # Recommended: 10-14 (higher = slower but more secure)
+    
+    # argon2 parameters (used when algorithm: argon2)
+    # memory: 65536        # KiB (recommended: 65536-262144, i.e., 64-256 MiB)
+    # iterations: 3        # Recommended: 2-4
+    # parallelism: 4       # Recommended: 2-8
+    # CLI: dcrypt passwd --algorithm argon2 --argon2-memory 65536 --argon2-iterations 3 --argon2-parallelism 4
+    
+    # scrypt parameters (used when algorithm: scrypt)
+    # scrypt_n: 16384      # CPU/memory cost (must be power of 2)
+    # scrypt_r: 8          # Block size
+    # scrypt_p: 1          # Parallelism
+    # CLI: dcrypt passwd --algorithm scrypt --scrypt-n 16384 --scrypt-r 8 --scrypt-p 1
+
+# Users with password hashes
+# Generate with: dcrypt passwd --password "your-password" --algorithm <alg>
 users:
+  # User with bcrypt hash (default)
   user:
+    # bcrypt hash format: $2a$10$...
     password: '$2a$10$yITzSSNJZAdDZs8iVBQzkuZCzZ49PyjTiPIrmBUKUpB0pwX7eySvW'
     subdir: '/user'
     permissions: 'crud'
+  
+  # Admin with bcrypt hash
   admin:
     password: '$2a$10$yITzSSNJZAdDZs8iVBQzkuZCzZ49PyjTiPIrmBUKUpB0pwX7eySvW'
     permissions: 'crud'
+  
+  # Example: User with argon2 hash (uncomment to use)
+  # argon2 hash format: $argon2id$v=19$m=65536,t=3,p=4$...
+  # user2:
+  #   password: '$argon2id$v=19$m=65536,t=3,p=4$AAAAAAAAAAAAAAAAAAAAAA==$GnFPqWK2ZBZU48E8jXvqv15WtvmKeN7woMUo2Xsnmxs='
+  #   subdir: '/user2'
+  #   permissions: 'read'
+  
+  # Example: User with scrypt hash (uncomment to use)
+  # scrypt hash format: $scrypt$N=16384,r=8,p=1$...
+  # user3:
+  #   password: '$scrypt$N=16384,r=8,p=1$AAAAAAAAAAAAAAAAAAAAAA==$yUsUSkpHOPPG+hceQT+0oJeobc5tF076uDqhetqL/3c='
+  #   subdir: '/user3'
+  #   permissions: 'crud'
 
-# Logging
+# Logging configuration
 log:
-  production: true # All logs will be in NDJSON format. If set to false, than after parsing the config file, the logging mode will be set to TEXT
-  debug: true
-  error: true
-  create: true
-  read: true
-  update: true
-  delete: true
+  production: true  # Use JSON format for production
+  debug: true       # Enable debug logging
+  error: true       # Log errors
+  create: true      # Log file/directory creation
+  read: true        # Log file/directory reads
+  update: true      # Log file/directory updates
+  delete: true      # Log file/directory deletion
 
-# CORS
+# CORS configuration
 cors:
-  origin: '*'
+  origin: '*'       # Allow all origins (use specific domain in production)
+  credentials: false # Allow credentials (cookies, auth headers)

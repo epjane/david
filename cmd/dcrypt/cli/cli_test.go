@@ -9,14 +9,14 @@ func TestGetRootCmd(t *testing.T) {
 	if cmd == nil {
 		t.Error("GetRootCmd returned nil")
 	}
-	if cmd.Use != "bcpt" {
-		t.Errorf("Expected Use to be 'bcpt', got '%s'", cmd.Use)
+	if cmd.Use != "dcrypt" {
+		t.Errorf("Expected Use to be 'dcrypt', got '%s'", cmd.Use)
 	}
 }
 
 func TestRootCommand(t *testing.T) {
 	cmd := GetRootCmd()
-	// bcpt root command has no Run function, it delegates to subcommands
+	// dcrypt root command has no Run function, it delegates to subcommands
 	if cmd.Run != nil {
 		t.Log("Root command has Run function (optional)")
 	}
@@ -27,8 +27,8 @@ func TestPasswdCommand(t *testing.T) {
 	if passwdCmd == nil {
 		t.Error("GetPasswdCmd returned nil")
 	}
-	if passwdCmd.Short != "Generate a BCrypt password hash" {
-		t.Errorf("Expected Short to be 'Generate a BCrypt password hash', got '%s'", passwdCmd.Short)
+	if passwdCmd.Short != "Generate a password hash" {
+		t.Errorf("Expected Short to be 'Generate a password hash', got '%s'", passwdCmd.Short)
 	}
 }
 

@@ -15,12 +15,12 @@ Migrate from `flag` package to `cobra` for better CLI structure, auto-generated 
 ### Files to Create:
 - `cmd/david/cli/root.go` - Root command setup
 - `cmd/david/cli/server.go` - Server subcommand
-- `cmd/bcpt/cli/root.go` - BCPT root command
-- `cmd/bcpt/cli/passwd.go` - BCPT passwd subcommand
+- `cmd/dcrypt/cli/root.go` - BCPT root command
+- `cmd/dcrypt/cli/passwd.go` - BCPT passwd subcommand
 
 ### Files to Modify:
 - `cmd/david/main.go` - Replace with simple CLI invocation
-- `cmd/bcpt/main.go` - Replace with simple CLI invocation
+- `cmd/dcrypt/main.go` - Replace with simple CLI invocation
 - `go.mod` - Add cobra and viper dependencies
 
 ### Dependencies to Add:
@@ -43,7 +43,7 @@ var rootCmd = &cobra.Command{
 - TLS support
 - A simple user management which allows user-directory-jails
 - Live config reload
-- A CLI tool to generate BCrypt password hashes (bcpt)`,
+- A CLI tool to generate BCrypt password hashes (dcrypt)`,
     Run: func(cmd *cobra.Command, args []string) {
         // Default behavior: run server
         server.Run()
@@ -152,9 +152,9 @@ Global Flags:
 ### BCPT Command Structure:
 ```go
 var bcptCmd = &cobra.Command{
-    Use:   "bcpt",
+    Use:   "dcrypt",
     Short: "BCrypt password hash generator",
-    Long:  `bcpt is a CLI tool to generate BCrypt password hashes for david configuration.`,
+    Long:  `dcrypt is a CLI tool to generate BCrypt password hashes for david configuration.`,
 }
 
 var passwdCmd = &cobra.Command{
@@ -193,7 +193,7 @@ go get github.com/spf13/viper@latest
 
 ### Step 2: Create CLI Structure
 - Create `cmd/david/cli/` directory
-- Create `cmd/bcpt/cli/` directory
+- Create `cmd/dcrypt/cli/` directory
 - Add root commands
 - Add subcommands
 

@@ -12,7 +12,7 @@ _david_ is a simple WebDAV server that provides the following features:
 - A simple user management which allows user-directory-jails as well as full admin access to
   all subdirectories.
 - Live config reload to allow editing of users without downtime.
-- A cli tool to generate BCrypt password hashes.
+- A CLI tool to generate password hashes (bcrypt, argon2, scrypt)
 
 It perfectly fits if you would like to give some people the possibility to upload, download or
 share files with common tools like the OSX Finder, Windows Explorer or Nautilus under Linux
@@ -52,7 +52,7 @@ git clone https://github.com/audstanley/david
 
 ```sh
 cd cmd/david && go build . && mv ./david ~/go/bin/david
-cd ../bcpt && go build . && mv bcpt ~/go/bin/bcpt && cd ../..
+cd ../dcrypt && go build . && mv dcrypt ~/go/bin/dcrypt && cd ../..
 ```
 
 Alternatively, use mage to build:
@@ -258,24 +258,78 @@ User management in _david_ is very simple, but optional. You don't have to add u
 necessary for your use case. But if you do, each user in the `config.yaml` **must** have a
 password and **can** have a subdirectory.
 
-The password must be in form of a BCrypt hash. You can generate one calling the shipped CLI
-tool `bcpt passwd`:
+The password must be in form of a hashed password. You can generate one calling the shipped CLI
+tool `dcrypt passwd`. David supports multiple hashing algorithms for flexibility and performance:
+
+**Supported Algorithms:**
+- **bcrypt** - Battle-tested, widely compatible (default)
+- **argon2** - Modern, memory-hard, Argon2id winner (2015 password hashing contest)
+- **scrypt** - Memory-hard, resistant to GPU/ASIC attacks
+
+**Generate with dcrypt passwd:**
 
 ```sh
-bcpt passwd --password "your-password" --cost 10
-```
+# Default: bcrypt
+dcrypt passwd --password "your-password"
 
-Or interactively:
+# Specify algorithm and cost
+dcrypt passwd --password "your-password" --algorithm bcrypt --cost 12
+dcrypt passwd --password "your-password" --algorithm argon2
+dcrypt passwd --password "your-password" --algorithm scrypt
 
-```sh
-bcpt passwd
+# Interactive mode
+dcrypt passwd
 Enter password: ******
-Hashed Password: $2a$10$...
+Hashed Password (bcrypt): $2a$10$...
 ```
 
 **BCPT CLI Options:**
 - `-p, --password string` - Password to hash (required)
-- `-c, --cost int` - BCrypt cost factor (default 10)
+- `--algorithm string` - Hash algorithm: bcrypt, argon2, scrypt (default: bcrypt)
+- `-c, --cost int` - Hash cost factor (default: 10 for bcrypt)
+
+**David Server Configuration:**
+
+Configure the hash algorithm in your config.yaml:
+
+```yaml
+hash:
+  algorithm: bcrypt  # bcrypt, argon2, or scrypt
+  params:
+    bcrypt_cost: 10
+    # argon2 (uses fixed parameters):
+    # memory: 64
+    # iterations: 3
+    # parallelism: 4
+    # scrypt:
+    # scrypt_n: 16384
+    # scrypt_r: 8
+    # scrypt_p: 1
+```
+
+Or override from CLI:
+
+```sh
+david server --config config.yaml --hash-algorithm argon2
+```
+
+**Security Comparison (benchmarks on this system):**
+
+| Algorithm | Security | Memory | Speed (Hash Gen) | Speed (Verify) | Best For |
+|-----------|----------|--------|------------------|----------------|----------|
+| **bcrypt** | High | Low (~4KB) | 66.93 ms | 63.08 ms | General use, maximum compatibility |
+| **argon2** | Highest | High (~64MB) | 81.06 ms | <1 µs | Modern applications, recommended |
+| **scrypt** | High | High (~128MB) | 81.64 ms | 81.66 ms | GPU resistance |
+
+> **Note:** Benchmarks measured on Linux with Go 1.23, 100 iterations. Run `dcrypt benchmark` to measure on your system.
+>
+> **About SHA:** We do not support SHA-256/SHA-512 for password hashing. These algorithms are designed for general-purpose hashing and are intentionally fast, making them unsuitable for passwords (see [issue #2](https://github.com/audstanley/david/issues/2)). For security, we recommend memory-hard algorithms like argon2 or bcrypt.
+
+**Notes:**
+- All three algorithms are memory-hard, providing resistance against GPU/ASIC attacks
+- Argon2 is the current recommended algorithm (winner of the 2015 Password Hashing Competition)
+- Bcrypt remains the safest choice for maximum compatibility and battle-testing
+- David automatically detects the hash algorithm from the hash prefix, so switching algorithms won't break existing users
 
 If a subdirectory is configured for a user, the user is jailed within it and can't see anything
 that exists outside of this directory. If no subdirectory is configured for an user, the user
@@ -384,38 +438,52 @@ david server [flags]
 - `-p, --port string` - Override port
 - `-d, --debug` - Enable debug logging
 - `--production` - Enable production (JSON) logging
+- `--hash-algorithm string` - Hash algorithm: bcrypt, argon2, scrypt (default: from config)
 
-### bcpt
+### dcrypt
 
-BCrypt password hash generator:
+Password hash generator supporting multiple algorithms:
 
 ```
-bcpt [command]
+dcrypt [command]
 ```
 
 **Available Commands:**
-- `passwd` - Generate a BCrypt password hash
+- `passwd` - Generate a password hash (bcrypt, argon2, or scrypt)
 - `help` - Help about any command
 
 **Passwd Command:**
 ```
-bcpt passwd [flags]
+dcrypt passwd [flags]
 ```
 
 **Flags:**
 - `-p, --password string` - Password to hash (required)
-- `-c, --cost int` - BCrypt cost factor (default 10)
+- `--algorithm string` - Hash algorithm: bcrypt, argon2, scrypt (default: bcrypt)
+- `-c, --cost int` - Hash cost factor (default: 10 for bcrypt)
 - `-h, --help` - Help for passwd
 
 **Examples:**
 ```bash
-# Generate hash from command line
-bcpt passwd --password "mysecretpassword"
+# Generate bcrypt hash (default)
+dcrypt passwd --password "mysecretpassword"
+Hashed Password (bcrypt): $2a$10$...
 
-# Generate hash interactively
-bcpt passwd
+# Generate with specific algorithm and cost
+dcrypt passwd --password "secret" --algorithm bcrypt --cost 12
+
+# Generate argon2 hash with custom parameters
+dcrypt passwd --password "secret" --algorithm argon2 \
+  --argon2-memory 65536 --argon2-iterations 3 --argon2-parallelism 4
+
+# Generate scrypt hash with custom parameters
+dcrypt passwd --password "secret" --algorithm scrypt \
+  --scrypt-n 16384 --scrypt-r 8 --scrypt-p 1
+
+# Generate interactively
+dcrypt passwd
 Enter password: ******
-Hashed Password: $2a$10$...
+Hashed Password (bcrypt): $2a$10$...
 ```
 
 ## Issues on Windows?

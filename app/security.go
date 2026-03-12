@@ -13,7 +13,6 @@ import (
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type contextKey int
@@ -71,8 +70,8 @@ func authenticate(cfg *Config, username, password string) (*AuthInfo, error) {
 	// Retrieve user CRUD permissions from configuration
 	crud := cfg.Users[username].Crud
 
-	// Verify provided password against stored hash
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	// Verify provided password against stored hash using auto-detection
+	err := VerifyPasswordHash(password, user.Password)
 	if err != nil {
 		return &AuthInfo{Username: username, Authenticated: false, CrudType: &testCrudType}, errors.New("Password doesn't match")
 	}
@@ -348,22 +347,18 @@ func SayUnauthorized(w http.ResponseWriter, realm string) {
 	}
 }
 
-// GenHash generates a bcrypt hashed password string
+// GenHash generates a hashed password string using bcrypt (default algorithm)
 func GenHash(password []byte) string {
-	pw, err := bcrypt.GenerateFromPassword(password, 10)
+	hash, err := GeneratePasswordHash(string(password), "bcrypt", HashParams{BcryptCost: 10})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return string(pw)
+	return hash
 }
 
-// GenHashFromPassword generates a bcrypt hashed password string with specified cost
+// GenHashFromPassword generates a hashed password string with specified algorithm and cost
 func GenHashFromPassword(password string, cost int) (string, error) {
-	pw, err := bcrypt.GenerateFromPassword([]byte(password), cost)
-	if err != nil {
-		return "", err
-	}
-
-	return string(pw), nil
+	// Default to bcrypt for backward compatibility
+	return GeneratePasswordHash(password, "bcrypt", HashParams{BcryptCost: cost})
 }

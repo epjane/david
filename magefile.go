@@ -29,7 +29,7 @@ type target struct {
 	goarch string
 }
 
-// Build Builds david and bcpt and moves them to the dist directory
+// Build Builds david and dcrypt and moves them to the dist directory
 func Build() error {
 	mg.Deps(Clean)
 
@@ -47,7 +47,7 @@ func Build() error {
 	return nil
 }
 
-// BuildReleases Builds david and bcpt for different OS and package them to a zip file for each os
+// BuildReleases Builds david and dcrypt for different OS and package them to a zip file for each os
 func BuildReleases() error {
 	mg.Deps(Clean)
 
@@ -61,11 +61,11 @@ func BuildReleases() error {
 
 	for _, t := range targets {
 		fmt.Printf("Building for OS %s and architecture %s\n", t.goos, t.goarch)
-		david, bcpt, _ := buildSpecific(t)
+		david, dcrypt, _ := buildSpecific(t)
 
 		files := []string{
 			david,
-			bcpt,
+			dcrypt,
 			"Readme.md",
 			filepath.Join("examples", "config-sample.yaml"),
 		}
@@ -74,7 +74,7 @@ func BuildReleases() error {
 		zipFiles(filepath.Join("dist", archiveName), files)
 
 		os.Remove(david)
-		os.Remove(bcpt)
+		os.Remove(dcrypt)
 	}
 
 	return nil
@@ -117,7 +117,7 @@ func Check() error {
 	return nil
 }
 
-// Install Installs david and bcpt to your $GOPATH/bin folder
+// Install Installs david and dcrypt to your $GOPATH/bin folder
 func Install() error {
 	fmt.Println("Installing...")
 	return execCommand("go", "install", "./...").Run()
@@ -157,19 +157,19 @@ func buildSpecific(t target) (string, string, error) {
 		return "", "", err
 	}
 
-	bcptSource := filepath.Join("cmd", "bcpt", "main.go")
-	bcptExe := filepath.Join(DIST, "bcpt")
+	dcryptSource := filepath.Join("cmd", "dcrypt", "main.go")
+	dcryptExe := filepath.Join(DIST, "dcrypt")
 	if t.goos == "windows" {
-		bcptExe += ".exe"
+		dcryptExe += ".exe"
 	}
-	bcptCommand := execCommand("go", "build", "-o", bcptExe, bcptSource)
-	bcptCommand.Env = env
-	err = bcptCommand.Run()
+	dcryptCommand := execCommand("go", "build", "-o", dcryptExe, dcryptSource)
+	dcryptCommand.Env = env
+	err = dcryptCommand.Run()
 	if err != nil {
 		return "", "", err
 	}
 
-	return davidExe, bcptExe, nil
+	return davidExe, dcryptExe, nil
 }
 
 // zipFiles compresses one or many files into a single zip archive file.
