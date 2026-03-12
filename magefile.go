@@ -29,7 +29,7 @@ type target struct {
 	goarch string
 }
 
-// Build Builds dave and davecli and moves it to the dist directory
+// Build Builds david and bcpt and moves them to the dist directory
 func Build() error {
 	mg.Deps(Clean)
 
@@ -47,7 +47,7 @@ func Build() error {
 	return nil
 }
 
-// BuildReleases Builds dave and davecli for different OS and package them to a zip file for each os
+// BuildReleases Builds david and bcpt for different OS and package them to a zip file for each os
 func BuildReleases() error {
 	mg.Deps(Clean)
 
@@ -61,20 +61,20 @@ func BuildReleases() error {
 
 	for _, t := range targets {
 		fmt.Printf("Building for OS %s and architecture %s\n", t.goos, t.goarch)
-		dave, daveCli, _ := buildSpecific(t)
+		david, bcpt, _ := buildSpecific(t)
 
 		files := []string{
-			dave,
-			daveCli,
+			david,
+			bcpt,
 			"Readme.md",
 			filepath.Join("examples", "config-sample.yaml"),
 		}
 
-		archiveName := fmt.Sprintf("dave-%s-%s.zip", t.goos, t.goarch)
+		archiveName := fmt.Sprintf("david-%s-%s.zip", t.goos, t.goarch)
 		zipFiles(filepath.Join("dist", archiveName), files)
 
-		os.Remove(dave)
-		os.Remove(daveCli)
+		os.Remove(david)
+		os.Remove(bcpt)
 	}
 
 	return nil
@@ -117,7 +117,7 @@ func Check() error {
 	return nil
 }
 
-// Install Installs dave and davecli to your $GOPATH/bin folder
+// Install Installs david and bcpt to your $GOPATH/bin folder
 func Install() error {
 	fmt.Println("Installing...")
 	return execCommand("go", "install", "./...").Run()
@@ -145,31 +145,31 @@ func buildSpecific(t target) (string, string, error) {
 		env = append(env, fmt.Sprintf("GOARCH=%s", t.goarch))
 	}
 
-	daveSource := filepath.Join("cmd", "dave", "main.go")
-	daveExe := filepath.Join(DIST, "dave")
+	davidSource := filepath.Join("cmd", "david", "main.go")
+	davidExe := filepath.Join(DIST, "david")
 	if t.goos == "windows" {
-		daveExe += ".exe"
+		davidExe += ".exe"
 	}
-	daveCommand := execCommand("go", "build", "-o", daveExe, daveSource)
-	daveCommand.Env = env
-	err := daveCommand.Run()
+	davidCommand := execCommand("go", "build", "-o", davidExe, davidSource)
+	davidCommand.Env = env
+	err := davidCommand.Run()
 	if err != nil {
 		return "", "", err
 	}
 
-	daveCliSource := filepath.Join("cmd", "davecli", "main.go")
-	daveCliExe := filepath.Join(DIST, "davecli")
+	bcptSource := filepath.Join("cmd", "bcpt", "main.go")
+	bcptExe := filepath.Join(DIST, "bcpt")
 	if t.goos == "windows" {
-		daveCliExe += ".exe"
+		bcptExe += ".exe"
 	}
-	daveCliCommand := execCommand("go", "build", "-o", daveCliExe, daveCliSource)
-	daveCliCommand.Env = env
-	err = daveCliCommand.Run()
+	bcptCommand := execCommand("go", "build", "-o", bcptExe, bcptSource)
+	bcptCommand.Env = env
+	err = bcptCommand.Run()
 	if err != nil {
 		return "", "", err
 	}
 
-	return daveExe, daveCliExe, nil
+	return davidExe, bcptExe, nil
 }
 
 // zipFiles compresses one or many files into a single zip archive file.

@@ -1,7 +1,7 @@
 package main
 
-import "github.com/audstanley/david/cmd/bcpt/subcmd"
+import "github.com/audstanley/david/cmd/bcpt/cli"
 
 func main() {
-	subcmd.Execute()
+	cli.Execute()
 }
