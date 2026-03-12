@@ -27,8 +27,8 @@ func TestPasswdCommand(t *testing.T) {
 	if passwdCmd == nil {
 		t.Error("GetPasswdCmd returned nil")
 	}
-	if passwdCmd.Short != "Generate a BCrypt password hash" {
-		t.Errorf("Expected Short to be 'Generate a BCrypt password hash', got '%s'", passwdCmd.Short)
+	if passwdCmd.Short != "Generate a password hash" {
+		t.Errorf("Expected Short to be 'Generate a password hash', got '%s'", passwdCmd.Short)
 	}
 }
 

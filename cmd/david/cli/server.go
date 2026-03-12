@@ -30,6 +30,7 @@ func init() {
 	serverCmd.Flags().StringP("port", "p", "", "Override port")
 	serverCmd.Flags().BoolP("debug", "d", false, "Enable debug logging")
 	serverCmd.Flags().BoolP("production", "", false, "Enable production (JSON) logging")
+	serverCmd.Flags().String("hash-algorithm", "", "Hash algorithm: bcrypt, argon2, scrypt (default: from config)")
 
 	viper.BindPFlags(serverCmd.Flags())
 }
@@ -40,6 +41,7 @@ func RunServer(cmd *cobra.Command, args []string) {
 	portOverride, _ := cmd.Flags().GetString("port")
 	debugEnabled, _ := cmd.Flags().GetBool("debug")
 	productionEnabled, _ := cmd.Flags().GetBool("production")
+	hashAlgorithm, _ := cmd.Flags().GetString("hash-algorithm")
 
 	ProductionFormatter := &logrus.JSONFormatter{}
 	NonProductionFormatter := &logrus.TextFormatter{}
@@ -60,6 +62,10 @@ func RunServer(cmd *cobra.Command, args []string) {
 	}
 	if debugEnabled {
 		config.Log.Debug = true
+	}
+
+	if hashAlgorithm != "" {
+		config.Hash.Algorithm = hashAlgorithm
 	}
 
 	logger := logrus.New()

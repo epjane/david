@@ -24,6 +24,13 @@ type Config struct {
 	Realm   string               `default:"david"`
 	Users   map[string]*UserInfo `default:"nil"`
 	Cors    Cors                 `default:"{origin:*, credentials:false}"`
+	Hash    HashConfig           `default:"{algorithm:bcrypt,bcrypt_cost:10}"`
+}
+
+// HashConfig contains configuration for password hashing
+type HashConfig struct {
+	Algorithm string     `yaml:"algorithm" default:"bcrypt"`
+	Params    HashParams `yaml:"params"`
 }
 
 // Logging allows definition for logging each CRUD method.
