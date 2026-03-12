@@ -63,19 +63,36 @@ mage Build
 
 This will create binaries in the `dist/` directory.
 
-#### Command Line Flags
+#### Command Line Usage
 
-The `david` binary supports the following command line flags to override configuration:
+The `david` CLI now uses Cobra with subcommands for better structure and help:
 
 ```sh
-david --config /path/to/config.yaml --host 127.0.0.1 --port 9000
+# Start the server (default command)
+david server --config config.yaml
+
+# Start server with overrides
+david server --host 127.0.0.1 --port 9000 --debug
+
+# Get help
+david --help
+david server --help
+david completion --help
 ```
 
-- `--config`: Path to configuration file (optional)
-- `--host`: Override host address from config
-- `--port`: Override port from config
+**Available Commands:**
 
-If not provided, the server will use values from the configuration file.
+- `server` - Start the WebDAV server
+- `help` - Help about any command
+- `completion` - Generate autocompletion script
+
+**Server Flags:**
+
+- `-c, --config string` - Path to configuration file
+- `-H, --host string` - Override host address
+- `-p, --port string` - Override port  
+- `-d, --debug` - Enable debug logging
+- `--production` - Enable production (JSON) logging
 
 ## Configuration
 
@@ -92,8 +109,16 @@ Alternatively, the path to a configuration file can be specified on the
 command-line:
 
 ```sh
-david --config /path/to/config.yaml
+david server --config /path/to/config.yaml
 ```
+
+You can also override configuration settings directly from command-line flags:
+
+```sh
+david server --config config.yaml --host 0.0.0.0 --port 8080 --debug
+```
+
+**Priority:** CLI flags override config file settings.
 
 ### First steps
 
@@ -233,6 +258,25 @@ User management in _david_ is very simple, but optional. You don't have to add u
 necessary for your use case. But if you do, each user in the `config.yaml` **must** have a
 password and **can** have a subdirectory.
 
+The password must be in form of a BCrypt hash. You can generate one calling the shipped CLI
+tool `bcpt passwd`:
+
+```sh
+bcpt passwd --password "your-password" --cost 10
+```
+
+Or interactively:
+
+```sh
+bcpt passwd
+Enter password: ******
+Hashed Password: $2a$10$...
+```
+
+**BCPT CLI Options:**
+- `-p, --password string` - Password to hash (required)
+- `-c, --cost int` - BCrypt cost factor (default 10)
+
 The password must be in form of a BCrypt hash. You can generate one calling the shipped cli
 tool `bcpt passwd`.
 
@@ -266,23 +310,38 @@ log:
 ...
 ```
 
-The `production` setting controls the log formatter:
-- When `false`: Uses human-readable text format with timestamps
-- When `true`: Uses JSON format for structured logging
+**Log Formats:**
 
-Be aware, that the log pattern of an attached tty differs from the log pattern of a detached tty.
+- **Text Mode** (`production: false`): Human-readable format with timestamps
+- **JSON Mode** (`production: true`): Structured JSON format for log aggregation tools
 
-Example of an attached tty (text format):
+**Control via CLI:**
 
-	INFO[0000] Server is starting and listening              address=0.0.0.0 port=8000 security=none
+Enable debug or production mode from command line:
 
-Example of a detached tty (timestamp format):
+```sh
+david server --debug           # Enable debug logging
+david server --production      # Enable JSON log format
+```
 
-	time="2018-04-14T20:46:00+02:00" level=info msg="Server is starting and listening" address=0.0.0.0 port=8000 security=none
+**Priority:** CLI flags override config file settings.
 
-Example of production mode (JSON format):
+**Log Examples:**
 
-	{"level":"info","msg":"Server is starting and listening","address":"0.0.0.0","port":"8000","security":"none"}
+Attached TTY (text format):
+```
+INFO[0000] Server is starting and listening              address=0.0.0.0 port=8000 security=none
+```
+
+Detached TTY (timestamp format):
+```
+time="2018-04-14T20:46:00+02:00" level=info msg="Server is starting and listening" address=0.0.0.0 port=8000 security=none
+```
+
+Production mode (JSON format):
+```json
+{"level":"info","msg":"Server is starting and listening","address":"0.0.0.0","port":"8000","security":"none"}
+```
 
 ### Live reload
 
@@ -298,14 +357,69 @@ allows the WebDAV protocol.
 For example: Under OSX you can use the default file management tool *Finder*. Press _CMD+K_,
 enter the server address (e.g. `http://localhost:8000`) and choose connect.
 
-## Contributing
+## CLI Reference
 
-Everyone is welcome to create pull requests for this project. If you're new to github, take
-a look [here](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests)
-to get an idea of it.
+### david
 
-If you've got an idea of a function that should find it's way into this project, but you
-won't implement it by yourself, please create a new issue.
+The WebDAV server with subcommand structure:
+
+```
+david [flags]
+david [command]
+```
+
+**Available Commands:**
+- `server` - Start the WebDAV server
+- `help` - Help about any command
+- `completion` - Generate autocompletion script
+
+**Global Flags:**
+- `-h, --help` - Help for david
+
+**Server Command:**
+```
+david server [flags]
+```
+
+**Flags:**
+- `-c, --config string` - Path to configuration file
+- `-H, --host string` - Override host address
+- `-p, --port string` - Override port
+- `-d, --debug` - Enable debug logging
+- `--production` - Enable production (JSON) logging
+
+### bcpt
+
+BCrypt password hash generator:
+
+```
+bcpt [command]
+```
+
+**Available Commands:**
+- `passwd` - Generate a BCrypt password hash
+- `help` - Help about any command
+
+**Passwd Command:**
+```
+bcpt passwd [flags]
+```
+
+**Flags:**
+- `-p, --password string` - Password to hash (required)
+- `-c, --cost int` - BCrypt cost factor (default 10)
+- `-h, --help` - Help for passwd
+
+**Examples:**
+```bash
+# Generate hash from command line
+bcpt passwd --password "mysecretpassword"
+
+# Generate hash interactively
+bcpt passwd
+Enter password: ******
+Hashed Password: $2a$10$...
+```
 
 ## Issues on Windows?
 Windows 11 is not going to let you map the network drive with a self signed certificate or no running david with no certificate (at all). 

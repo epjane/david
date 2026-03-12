@@ -183,18 +183,45 @@ Migrate from `flag` package to `cobra` for:
 
 ## PHASE 5: DOCUMENTATION
 
-**Status:** PENDING
+**Status:** ✓ COMPLETED
 
-### 5.1 Readme.md
-- Add missing installation steps 1-2
-- Fix dave/david naming inconsistencies
-- Add password hash notes
-- Add CORS security warning
+### 5.1 Readme.md - Completed Updates
+
+- ✅ Fixed installation steps (added steps 1-2)
+- ✅ Added mage build instructions
+- ✅ Added comprehensive CLI documentation with subcommands
+- ✅ Added `david --help` output documentation
+- ✅ Added `bcpt --help` documentation
+- ✅ Updated password hash generation section
+- ✅ Enhanced logging section with examples
+- ✅ Clarified log format differences
 
 ### 5.2 config-sample.yaml
+
+**Status:** PENDING
+
+**To Do:**
 - Add password hash generation note
 - Set production to false
 - Add CORS warning comment
+
+### Documentation Improvements Made:
+
+**CLI Reference Added:**
+- david server subcommand
+- david flags and options
+- bcpt passwd subcommand  
+- CLI examples for common operations
+
+**Logging Enhanced:**
+- Clear log format descriptions
+- CLI control options
+- Multiple format examples
+
+**User Management Updated:**
+- BCPT CLI integration
+- Interactive and command-line hash generation
+- BCPT flags documentation
 
 ---
 
