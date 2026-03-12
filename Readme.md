@@ -52,7 +52,7 @@ git clone https://github.com/audstanley/david
 
 ```sh
 cd cmd/david && go build . && mv ./david ~/go/bin/david
-cd ../bcpt && go build . && mv bcpt ~/go/bin/bcpt && cd ../..
+cd ../dcrypt && go build . && mv dcrypt ~/go/bin/dcrypt && cd ../..
 ```
 
 Alternatively, use mage to build:
@@ -259,26 +259,26 @@ necessary for your use case. But if you do, each user in the `config.yaml` **mus
 password and **can** have a subdirectory.
 
 The password must be in form of a hashed password. You can generate one calling the shipped CLI
-tool `bcpt passwd`. David supports multiple hashing algorithms for flexibility and performance:
+tool `dcrypt passwd`. David supports multiple hashing algorithms for flexibility and performance:
 
 **Supported Algorithms:**
 - **bcrypt** - Battle-tested, widely compatible (default)
 - **argon2** - Modern, memory-hard, Argon2id winner (2015 password hashing contest)
 - **scrypt** - Memory-hard, resistant to GPU/ASIC attacks
 
-**Generate with bcpt passwd:**
+**Generate with dcrypt passwd:**
 
 ```sh
 # Default: bcrypt
-bcpt passwd --password "your-password"
+dcrypt passwd --password "your-password"
 
 # Specify algorithm and cost
-bcpt passwd --password "your-password" --algorithm bcrypt --cost 12
-bcpt passwd --password "your-password" --algorithm argon2
-bcpt passwd --password "your-password" --algorithm scrypt
+dcrypt passwd --password "your-password" --algorithm bcrypt --cost 12
+dcrypt passwd --password "your-password" --algorithm argon2
+dcrypt passwd --password "your-password" --algorithm scrypt
 
 # Interactive mode
-bcpt passwd
+dcrypt passwd
 Enter password: ******
 Hashed Password (bcrypt): $2a$10$...
 ```
@@ -321,7 +321,7 @@ david server --config config.yaml --hash-algorithm argon2
 | **argon2** | Highest | High (~64MB) | 81.06 ms | <1 µs | Modern applications, recommended |
 | **scrypt** | High | High (~128MB) | 81.64 ms | 81.66 ms | GPU resistance |
 
-> **Note:** Benchmarks measured on Linux with Go 1.23, 100 iterations. Run `bcpt benchmark` to measure on your system.
+> **Note:** Benchmarks measured on Linux with Go 1.23, 100 iterations. Run `dcrypt benchmark` to measure on your system.
 >
 > **About SHA:** We do not support SHA-256/SHA-512 for password hashing. These algorithms are designed for general-purpose hashing and are intentionally fast, making them unsuitable for passwords (see [issue #2](https://github.com/audstanley/david/issues/2)). For security, we recommend memory-hard algorithms like argon2 or bcrypt.
 
@@ -440,12 +440,12 @@ david server [flags]
 - `--production` - Enable production (JSON) logging
 - `--hash-algorithm string` - Hash algorithm: bcrypt, argon2, scrypt (default: from config)
 
-### bcpt
+### dcrypt
 
 Password hash generator supporting multiple algorithms:
 
 ```
-bcpt [command]
+dcrypt [command]
 ```
 
 **Available Commands:**
@@ -454,7 +454,7 @@ bcpt [command]
 
 **Passwd Command:**
 ```
-bcpt passwd [flags]
+dcrypt passwd [flags]
 ```
 
 **Flags:**
@@ -466,16 +466,16 @@ bcpt passwd [flags]
 **Examples:**
 ```bash
 # Generate bcrypt hash (default)
-bcpt passwd --password "mysecretpassword"
+dcrypt passwd --password "mysecretpassword"
 Hashed Password (bcrypt): $2a$10$...
 
 # Generate with specific algorithm and cost
-bcpt passwd --password "secret" --algorithm bcrypt --cost 12
-bcpt passwd --password "secret" --algorithm argon2
-bcpt passwd --password "secret" --algorithm scrypt
+dcrypt passwd --password "secret" --algorithm bcrypt --cost 12
+dcrypt passwd --password "secret" --algorithm argon2
+dcrypt passwd --password "secret" --algorithm scrypt
 
 # Generate interactively
-bcpt passwd
+dcrypt passwd
 Enter password: ******
 Hashed Password (bcrypt): $2a$10$...
 ```

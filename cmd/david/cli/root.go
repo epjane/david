@@ -14,7 +14,7 @@ var rootCmd = &cobra.Command{
 - TLS support
 - A simple user management which allows user-directory-jails
 - Live config reload
-- A CLI tool to generate BCrypt password hashes (bcpt)`,
+- A CLI tool to generate password hashes (dcrypt - supports bcrypt, argon2, scrypt)`,
 	Run: func(cmd *cobra.Command, args []string) {
 		RunServer(cmd, args)
 	},

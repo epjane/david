@@ -10,9 +10,9 @@ import (
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "bcpt",
-	Short: "Password hash generator",
-	Long:  `bcpt is a CLI tool to generate password hashes (bcrypt, argon2, scrypt) for david configuration.`,
+	Use:   "dcrypt",
+	Short: "David's Bcrypt, Argon2, and Scrypt Encryption Tool",
+	Long:  `dcrypt is a CLI tool to generate password hashes (bcrypt, argon2, scrypt) for david configuration.`,
 }
 
 var benchmarkCmd = &cobra.Command{

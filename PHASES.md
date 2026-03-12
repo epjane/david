@@ -62,7 +62,7 @@ Comprehensive phased plan to fix critical issues in the david WebDAV server proj
 **File:** `magefile.go`
 
 **Issues Fixed:**
-- All references to dave/davecli updated to david/bcpt
+- All references to dave/davecli updated to david/dcrypt
 - Source paths corrected
 - Archive names fixed
 
@@ -191,7 +191,7 @@ Migrate from `flag` package to `cobra` for:
 - ✅ Added mage build instructions
 - ✅ Added comprehensive CLI documentation with subcommands
 - ✅ Added `david --help` output documentation
-- ✅ Added `bcpt --help` documentation
+- ✅ Added `dcrypt --help` documentation
 - ✅ Updated password hash generation section
 - ✅ Enhanced logging section with examples
 - ✅ Clarified log format differences
@@ -210,7 +210,7 @@ Migrate from `flag` package to `cobra` for:
 **CLI Reference Added:**
 - david server subcommand
 - david flags and options
-- bcpt passwd subcommand  
+- dcrypt passwd subcommand  
 - CLI examples for common operations
 
 **Logging Enhanced:**

@@ -12,8 +12,8 @@
 #   - argon2id  : Modern, memory-hard, fastest verification <1µs
 #   - scrypt    : Memory-hard, GPU resistant, ~82ms/hash
 #
-# Generate hashes with: bcpt passwd --password "your-password" --algorithm <alg>
-# Measure performance on your system: bcpt benchmark
+# Generate hashes with: dcrypt passwd --password "your-password" --algorithm <alg>
+# Measure performance on your system: dcrypt benchmark
 #
 # Example benchmarks (Linux, Go 1.23, 100 iterations):
 #   Algorithm   Generate    Verify        Memory
@@ -54,7 +54,7 @@ hash:
     # scrypt_p: 1          # Parallelism
 
 # Users with password hashes
-# Generate with: bcpt passwd --password "your-password" --algorithm <alg>
+# Generate with: dcrypt passwd --password "your-password" --algorithm <alg>
 users:
   # User with bcrypt hash (default)
   user:
