@@ -142,12 +142,6 @@ func handle(ctx context.Context, w http.ResponseWriter, req *http.Request, a *Ap
 	// Add authentication information to context
 	ctx = context.WithValue(ctx, authInfoKey, authInfo)
 
-	// Check Read permission
-	if !authInfo.Authenticated || authInfo.CrudType == nil || !authInfo.CrudType.Read {
-		SayUnauthorized(w, a.Config.Realm)
-		return
-	}
-
 	// Handle HTTP authorization from method headers
 	err, ok = handleHeadersForAuthorization(a, ctx, w, req, authInfo)
 	if err != nil {
@@ -244,13 +238,12 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 		// Log the received HEAD request but don't handle authorization here
 		log.WithField("method", req.Method).Debug("Method received")
 	case http.MethodOptions:
-		// Handle OPTIONS request by setting allowed methods and WebDAV headers
+		// Handle OPTIONS request by returning 405 Not Allowed
 		log.WithField("method", req.Method).Debug("Method received")
-		// Respond to OPTIONS request
 		w.Header().Set("Allow", strings.Join(allowedMethods, ", "))
-		w.Header().Set("DAV", "1, 2, source") // Indicate supported WebDAV versions and extensions
-		w.WriteHeader(http.StatusOK)
-		return nil, true // OPTIONS doesn't require authorization in same way
+		w.Header().Set("DAV", "1, 2, source")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return nil, false
 	case Propfind:
 		// Special handling for PROPFIND requests
 		log.WithFields(log.Fields{"user": authInfo.Username,
@@ -258,7 +251,7 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 			"crud":   authInfo.CrudType.Crud},
 		).Debug("Method received")
 		if !a.Config.Users[authInfo.Username].Crud.Read {
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusForbidden)
 			return nil, false
 		}
 		filePath := Resolve(ctx, req.URL.Path, Dir{a.Config})
@@ -317,7 +310,11 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 		}
 	case Propatch:
 		log.WithField("method", Propatch).Debug("Method received")
-		return nil, ok
+		if !a.Config.Users[authInfo.Username].Crud.Update {
+			w.WriteHeader(http.StatusForbidden)
+			return nil, false
+		}
+		return nil, true
 	default:
 		log.WithField("method", req.Method).Debug("Method not implemented")
 		w.WriteHeader(http.StatusNotImplemented)

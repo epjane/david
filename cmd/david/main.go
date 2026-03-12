@@ -14,8 +14,12 @@ import (
 
 func main() {
 	var configPath string
+	var hostOverride string
+	var portOverride string
 
 	flag.StringVar(&configPath, "config", "", "Path to configuration file")
+	flag.StringVar(&hostOverride, "host", "", "Override host address")
+	flag.StringVar(&portOverride, "port", "", "Override port")
 	flag.Parse()
 
 	// Set formatter for logrus
@@ -25,6 +29,13 @@ func main() {
 	log.SetLevel(log.DebugLevel)
 
 	config := app.ParseConfig(configPath)
+
+	if hostOverride != "" {
+		config.Address = hostOverride
+	}
+	if portOverride != "" {
+		config.Port = portOverride
+	}
 
 	// Set formatter for default log outputs
 	logger := log.New()

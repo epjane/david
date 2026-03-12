@@ -129,6 +129,7 @@ func TestAuthenticate(t *testing.T) {
 			&AuthInfo{
 				Username:      "",
 				Authenticated: false,
+				CrudType:      noAuthentication.CrudType,
 			},
 			false,
 		},
@@ -179,7 +180,7 @@ func TestAuthenticate(t *testing.T) {
 					"foo": {
 						Password:    GenHash([]byte("password")),
 						Permissions: "",
-						Crud:        noAuthentication.CrudType,
+						Crud:        &CrudType{Crud: "", Create: false, Read: false, Update: false, Delete: false},
 					},
 				}},
 				username: "foo",
@@ -187,8 +188,8 @@ func TestAuthenticate(t *testing.T) {
 			},
 			&AuthInfo{
 				Username:      "foo",
-				Authenticated: false,
-				CrudType:      noAuthentication.CrudType,
+				Authenticated: true,
+				CrudType:      &CrudType{Crud: "", Create: false, Read: false, Update: false, Delete: false},
 			},
 			false,
 		},

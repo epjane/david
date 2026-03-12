@@ -36,6 +36,11 @@ func TestParseConfig(t *testing.T) {
 	// Loop through each test case
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Reset Viper before each test
+			viper.Reset()
+			// Add temp directory as config path before parsing
+			viper.AddConfigPath(tmpDir)
+			viper.SetConfigName("config")
 			// Parse the configuration with an empty path (use config in temp dir)
 			got := ParseConfig("")
 			// Compare the parsed config with the expected config
@@ -95,19 +100,29 @@ log:
 	}
 	// **b. Allocate and unmarshal the configuration data:**
 	// Create a new Config instance and populate it with the parsed data.
-	var cfg = &Config{}
-	viper.Unmarshal(&cfg)
+	var resultCfg = &Config{
+		Users: make(map[string]*UserInfo),
+	}
+	err = viper.Unmarshal(resultCfg)
+	if err != nil {
+		log.WithError(err).Error("Error unmarshalling config in test")
+		t.Errorf("error unmarshalling config. error = %v", err)
+		return nil
+	}
 
 	// **4. User Permissions Processing**
 	for user := range viper.GetStringMap("Users") {
 		permissions := viper.GetString(fmt.Sprintf("Users.%s.permissions", user)) // Access specific user permissions
-		cfg.Users[user].Crud = &CrudType{Crud: permissions}                       // Set user's CRUD permissions object
-		err := FormatCrud(context.Background(), user, cfg)                        // Further process and validate permissions
+		if resultCfg.Users[user] == nil {
+			resultCfg.Users[user] = &UserInfo{}
+		}
+		resultCfg.Users[user].Crud = &CrudType{Crud: permissions} // Set user's CRUD permissions object
+		err := FormatCrud(context.Background(), user, resultCfg)  // Further process and validate permissions
 		if err != nil {
 			log.WithError(err).WithField("user", user).Error("Error parsing crud string from config file") // log error with context
 		}
 		log.WithFields(logrus.Fields{"user": user,
-			"crud": cfg.Users[user].Crud}).Info("Parsed crud string from config file") // Log parsed permissions
+			"crud": resultCfg.Users[user].Crud}).Info("Parsed crud string from config file") // Log parsed permissions
 	}
 
 	// **5. Config Path and Dummy Files (Optional)**
@@ -131,5 +146,5 @@ log:
 	viper.AddConfigPath(tmpDir)
 	// **6. Return the Config Instance**
 	// Return the populated Config instance for further use in the test case.
-	return cfg
+	return resultCfg
 }

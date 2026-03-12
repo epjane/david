@@ -61,7 +61,7 @@ func (d Dir) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
 			log.WithField("user", user).Warn("unauthorized to create directory")
 			return errors.New("unauthorized to create directory")
 		} else {
-			return nil
+			return errors.New("unauthorized to create directory")
 		}
 	}
 
@@ -104,26 +104,18 @@ func (d Dir) OpenFile(ctx context.Context, name string, flag int, perm os.FileMo
 
 	// Check for the file existence.
 	_, err = os.Stat(name)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			if !d.Config.Log.Create {
-				log.WithFields(log.Fields{
-					"path": name,
-					"user": user,
-				}).Debug("User does not have the permission to open a non-existent file they tried to create")
-				return nil, errors.New("the file: " + name + " does not exist and user " + user + " has no write permission to create it")
-			}
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		if flag&(os.O_WRONLY|os.O_RDWR) != 0 && !d.Config.Users[user].Crud.Create {
+			log.WithFields(log.Fields{
+				"path": name,
+				"user": user,
+			}).Debug("User does not have the permission to create non-existent file")
+			return nil, errors.New("the file: " + name + " does not exist and user " + user + " has no write permission to create it")
 		}
 	}
 
 	// Check permissions based on access mode.
-	if flag&os.O_RDONLY == 0 && !d.Config.Users[user].Crud.Create {
-		return nil, errors.New("unauthorized to write file")
-	}
-
-	// Check if user has write permission
-	hasCreatePermission := d.Config.Users[user].Crud.Create
-	if flag&(os.O_WRONLY|os.O_RDWR) != 0 && !hasCreatePermission {
+	if flag&(os.O_WRONLY|os.O_RDWR) != 0 && !d.Config.Users[user].Crud.Create {
 		if d.Config.Log.Create {
 			log.WithField("user", user).Warn("unauthorized to create file")
 		}
@@ -263,16 +255,15 @@ func (d Dir) Stat(ctx context.Context, name string) (os.FileInfo, error) {
 	fileInfo, err := os.Stat(name)
 	// 5.1 Handle different error cases:
 	if err != nil {
-		// File doesn't exist, and user is trying to create it when they don't have the permission to do so.
-		if errors.Is(err, os.ErrNotExist) && d.Config.Users[user].Crud.Read && !d.Config.Users[user].Crud.Create {
-			if d.Config.Log.Create { // Logging enabled for file creation
-				log.WithFields(log.Fields{ // Log a slightly more detailed warning if file creation is not permitted.
+		// File doesn't exist, and user doesn't have write permission to create it.
+		if errors.Is(err, os.ErrNotExist) && !d.Config.Users[user].Crud.Create {
+			if d.Config.Log.Create {
+				log.WithFields(log.Fields{
 					"path":  name,
 					"user":  user,
 					"crud":  d.Config.Users[user].Crud,
-					"issue": "file does not exist and user does not have the write permission to create it",
+					"issue": "file does not exist and user does not have write permission to create it",
 				}).Warn("User does not have the write permission to create this file")
-				return nil, nil
 			}
 		}
 		// 5.2 Other errors (including the create permission issues) are passed along.

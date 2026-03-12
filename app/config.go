@@ -77,7 +77,7 @@ func ParseConfig(path string) *Config {
 	if err != nil {
 		log.Fatal(fmt.Errorf("fatal error config file: %s", err)) // Propagate error with details
 	}
-	err = viper.Unmarshal(&cfg) // Unmarshall values into Config struct
+	err = viper.Unmarshal(cfg) // Unmarshall values into Config struct
 	if err != nil {
 		log.Fatal(fmt.Errorf("fatal error parsing config file: %s", err)) // Propagate error with context
 	}
@@ -88,12 +88,9 @@ func ParseConfig(path string) *Config {
 	cfg.Log.Debug = viper.GetBool("Log.Debug")
 
 	// Process user permissions
-	for user := range viper.GetStringMap("Users") {
+	for user := range cfg.Users {
 		log.WithField("user", user).Debug("Processing user permissions")
 		permissions := viper.GetString(fmt.Sprintf("Users.%s.permissions", user))
-		if cfg.Users[user] == nil {
-			cfg.Users[user] = &UserInfo{}
-		}
 		cfg.Users[user].Permissions = permissions
 		cfg.Users[user].Crud = &CrudType{Crud: permissions}
 		err := FormatCrud(context.Background(), user, cfg)
