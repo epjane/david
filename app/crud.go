@@ -15,10 +15,6 @@ type CrudType struct {
 	Delete bool
 }
 
-type contextKey int
-
-var crudContextKey contextKey
-
 // FormatCrud formats and validates a CRUD type string based on the provided context, user name, configuration.
 // This function takes a context (`ctx`), user name (`name`), configuration (`c`), and a `CrudType` object (`crud`) as input.
 func FormatCrud(ctx context.Context, name string, cfg *Config) error {
@@ -64,13 +60,7 @@ func FormatCrud(ctx context.Context, name string, cfg *Config) error {
 			}
 		}
 
-		// update the context with the CrudType object.
-		ctx = context.WithValue(ctx, crudContextKey, CrudType{crud.Crud, create, read, update, delete})
-		if ctx == nil {
-			return errors.New("failed to update context with CrudType")
-		}
-
-		// Update the fileds of the config.users.crud object.
+		// Update the fields of the config.users.crud object.
 		cfg.Users[name].Crud.Create = create
 		cfg.Users[name].Crud.Read = read
 		cfg.Users[name].Crud.Update = update

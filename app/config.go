@@ -62,7 +62,6 @@ func ParseConfig(path string) *Config {
 	// Initialize and log configuration loading
 	var cfg = &Config{}
 	log.WithField("path", path).Debug("Parsing config file")
-	//setDefaults() // Apply default configuration values
 	// Determine configuration file location
 	if path != "" {
 		viper.SetConfigFile(path) // Use provided path
@@ -90,20 +89,20 @@ func ParseConfig(path string) *Config {
 
 	// Process user permissions
 	for user := range viper.GetStringMap("Users") {
-		log.WithField("user", user).Debug("Processing user permissions") // Log user permissions processing
+		log.WithField("user", user).Debug("Processing user permissions")
+		permissions := viper.GetString(fmt.Sprintf("Users.%s.permissions", user))
 		if cfg.Users[user] == nil {
-			log.WithField("user", user).Error("User not found in config file") // Log error with context
-			log.WithError(errors.New("cannot launch David without a defined user")).Error("user: " + user + " is not defined in the config file")
-			os.Exit(65)
+			cfg.Users[user] = &UserInfo{}
 		}
-		permissions := viper.GetString(fmt.Sprintf("Users.%s.permissions", user)) // Access specific user permissions
-		cfg.Users[user].Crud = &CrudType{Crud: permissions}                       // Set user's CRUD permissions object
-		err := FormatCrud(context.Background(), user, cfg)                        // Further process and validate permissions
+		cfg.Users[user].Permissions = permissions
+		cfg.Users[user].Crud = &CrudType{Crud: permissions}
+		err := FormatCrud(context.Background(), user, cfg)
 		if err != nil {
-			log.WithError(err).WithField("user", user).Error("Error parsing crud string from config file") // log error with context
+			log.WithError(err).WithField("user", user).Error("Error parsing crud string from config file")
+			continue
 		}
 		log.WithFields(logrus.Fields{"user": user,
-			"crud": cfg.Users[user].Crud}).Debug("Parsed crud string from config file") // Log parsed permissions
+			"crud": cfg.Users[user].Crud}).Debug("Parsed crud string from config file")
 	}
 
 	// Validate TLS configuration (if present)
@@ -187,13 +186,15 @@ func updateConfig(cfg *Config, updatedCfg *Config) {
 				log.WithField("user", username).Info("Updated subdir of user")
 				cfg.Users[username].Subdir = userInformationChange.Subdir
 			}
-			if cfg.Users[username].Crud != userInformationChange.Crud {
+			if cfg.Users[username].Permissions != userInformationChange.Permissions {
+				cfg.Users[username].Permissions = userInformationChange.Permissions
 				cfg.Users[username].Crud = &CrudType{Crud: userInformationChange.Permissions}
 				err := FormatCrud(context.Background(), username, cfg)
 				if err != nil {
 					log.WithError(err).WithField("user", username).Error("Error parsing crud string from config file")
+				} else {
+					log.WithField("user", username).Info("Updated crud of user")
 				}
-				log.WithField("user", username).Info("Updated crud of user")
 			}
 		}
 	}

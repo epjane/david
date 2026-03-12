@@ -30,10 +30,10 @@ func main() {
 	logger := log.New()
 	if config.Log.Production {
 		logger.Formatter = ProductionFormatter
-		log.WithField("prdouction", config.Log.Production).Debug("Production mode enabled")
+		log.WithField("production", config.Log.Production).Debug("Production mode enabled")
 	} else {
 		logger.Formatter = NonProductionFormatter
-		log.WithField("prdouction", config.Log.Production).Debug("Production mode disabled")
+		log.WithField("production", config.Log.Production).Debug("Production mode disabled")
 		log.SetFormatter(NonProductionFormatter)
 	}
 	if config.Log.Debug {

@@ -31,44 +31,12 @@ func (d Dir) resolveUser(ctx context.Context) string {
 
 // authorizationFromContext retrieves and formats the user's CRUD permissions based on the given context.
 func (d Dir) authorizationFromContext(ctx context.Context) error {
-	// Extract the authenticated user name from the provided context.
 	user := d.resolveUser(ctx)
-	// If no user is identified return an error
 	if user == "" {
 		return errors.New("no user identified")
-	} else {
-		// Format and validate the retrieved CRUD permissions for the identified user using the FormatCrud function.
-		return FormatCrud(ctx, user, d.Config)
 	}
+	return FormatCrud(ctx, user, d.Config)
 }
-
-// resolve builds the physical path for a given name based on user information and configuration settings.
-// func (d Dir) resolve(ctx context.Context, name string) string {
-// 	// Validate the name for any invalid characters or separators.
-// 	if filepath.Separator != '/' && strings.ContainsRune(name, filepath.Separator) ||
-// 		strings.Contains(name, "\x00") { // Null bytes are illegal in file names because they can be used to terminate strings prematurely and cause unexpected behavior.
-// 		return ""
-// 	}
-// 	// Retrieve the base directory path from the configuration.
-// 	dir := string(d.Config.Dir)
-// 	// Use current directory if base directory is not set.
-// 	if dir == "" {
-// 		dir = "."
-// 	}
-// 	// Obtain authentication information from the context.
-// 	authInfo := AuthFromContext(ctx)
-// 	// Check if user is authenticated and has configured subdirectory.
-// 	if authInfo != nil && authInfo.Authenticated {
-// 		// Get user information from the configuration.
-// 		userInfo := d.Config.Users[authInfo.Username]
-// 		// If user has a configured subdirectory, append it to the path.
-// 		if userInfo != nil && userInfo.Subdir != nil {
-// 			return filepath.Join(dir, *userInfo.Subdir, filepath.FromSlash(path.Clean("/"+name)))
-// 		}
-// 	}
-// 	// Build the final physical path by combining base directory and the provided name.
-// 	return filepath.Join(dir, filepath.FromSlash(path.Clean("/"+name)))
-// }
 
 // Mkdir attempts to create a directory at the resolved physical path.
 func (d Dir) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
@@ -142,32 +110,24 @@ func (d Dir) OpenFile(ctx context.Context, name string, flag int, perm os.FileMo
 				log.WithFields(log.Fields{
 					"path": name,
 					"user": user,
-				}).Warn("User does not have the permission to open a non-existant file they tried to create")
+				}).Debug("User does not have the permission to open a non-existent file they tried to create")
 				return nil, errors.New("the file: " + name + " does not exist and user " + user + " has no write permission to create it")
 			}
 		}
 	}
 
 	// Check permissions based on access mode.
-	if flag&os.O_RDONLY == 0 && !d.Config.Users[user].Crud.Read {
-		return nil, errors.New("unauthorized to read file")
+	if flag&os.O_RDONLY == 0 && !d.Config.Users[user].Crud.Create {
+		return nil, errors.New("unauthorized to write file")
 	}
 
-	// Check if user has write permission, and also check if the operating system's file permissions allow writing.
-	// This small section might seem a little counterintuitive, but if a user tries to create a file, they are also, automatically, trying
-	// to open the that file. If they have read only permissions, they'll be able to open the any EXISTING file, but
-	// if they have the permission of "read" ONLY and the file doesn't exist, they won't be able to create it, and
-	// they shouldn't be able to open it, else an error will occur when the stats function inevitably runs on a non existsnt file.
+	// Check if user has write permission
 	hasCreatePermission := d.Config.Users[user].Crud.Create
 	if flag&(os.O_WRONLY|os.O_RDWR) != 0 && !hasCreatePermission {
-		if !hasCreatePermission { // This user don't have the permission to create a file!
-			if d.Config.Log.Create {
-				log.WithField("user", user).Warn("unauthorized to create file")
-			}
-			return nil, nil
-		} else { // This user has the permission to create a file, but the operating system's file permissions don't allow it.
-			return nil, errors.New("unauthorized to write file based on the operating system's file permissions")
+		if d.Config.Log.Create {
+			log.WithField("user", user).Warn("unauthorized to create file")
 		}
+		return nil, errors.New("unauthorized to create file")
 	}
 
 	// Open the file using os.OpenFile.

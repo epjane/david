@@ -16,6 +16,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type contextKey int
+
 var authInfoKey contextKey
 
 // AuthInfo holds the username and authentication status
@@ -122,7 +124,7 @@ func handle(ctx context.Context, w http.ResponseWriter, req *http.Request, a *Ap
 	// Authenticate user credentials
 	authInfo, err := authenticate(a.Config, username, password)
 	// Log failed login attempt with user and IP address
-	if err != nil {
+	if err != nil || authInfo == nil {
 		ipAddr := req.Header.Get("X-Forwarded-For")
 		if len(ipAddr) == 0 {
 			remoteAddr := req.RemoteAddr
@@ -134,27 +136,27 @@ func handle(ctx context.Context, w http.ResponseWriter, req *http.Request, a *Ap
 			}
 		}
 		log.WithField("user", username).WithField("address", ipAddr).WithError(err).Warn("User failed to login")
-	}
-	// Check if user is authenticated and authorized
-	if !authInfo.Authenticated || !authInfo.CrudType.Read {
-		// Respond with Unauthorized status and optional realm
 		SayUnauthorized(w, a.Config.Realm)
 		return
 	}
 	// Add authentication information to context
 	ctx = context.WithValue(ctx, authInfoKey, authInfo)
 
-	// Handle HTTP authorization from method headers
-	err, ok = handleHeadersForAuthorization(a, ctx, w, req, authInfo)
-	if err == nil && !ok {
-		return
-	} else if err != nil {
-		log.WithFields(log.Fields{"error": err, "user": authInfo.Username, "method": req.Method}).Error("Error handling authorization - This method condition hasn't been handled yet")
-	} else if err != nil && !ok {
-		log.WithFields(log.Fields{"error": err, "user": authInfo.Username, "method": req.Method}).Error("Error handling authorization - This method condition hasn't been handled yet")
+	// Check Read permission
+	if !authInfo.Authenticated || authInfo.CrudType == nil || !authInfo.CrudType.Read {
+		SayUnauthorized(w, a.Config.Realm)
 		return
 	}
-	// =================================================================================================================
+
+	// Handle HTTP authorization from method headers
+	err, ok = handleHeadersForAuthorization(a, ctx, w, req, authInfo)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err, "user": authInfo.Username, "method": req.Method}).Error("Error handling authorization")
+		return
+	}
+	if !ok {
+		return
+	}
 
 	// Serve request with authenticated user context
 	a.Handler.ServeHTTP(w, req.WithContext(ctx))
@@ -192,7 +194,7 @@ func Resolve(ctx context.Context, name string, d Dir) string {
 var allowedMethods = []string{
 	"GET", "HEAD", "PUT", "POST", "DELETE",
 	"PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK",
-	"UNLOCK", "MKCOL", "DELETE",
+	"UNLOCK", "MKCOL",
 }
 
 const (
@@ -248,7 +250,7 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 		w.Header().Set("Allow", strings.Join(allowedMethods, ", "))
 		w.Header().Set("DAV", "1, 2, source") // Indicate supported WebDAV versions and extensions
 		w.WriteHeader(http.StatusOK)
-		return nil, !ok // Not authorized in the strict sense, but OPTIONS doesn't require file access
+		return nil, true // OPTIONS doesn't require authorization in same way
 	case Propfind:
 		// Special handling for PROPFIND requests
 		log.WithFields(log.Fields{"user": authInfo.Username,
@@ -256,41 +258,21 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 			"crud":   authInfo.CrudType.Crud},
 		).Debug("Method received")
 		if !a.Config.Users[authInfo.Username].Crud.Read {
-			// Check user's "Read" permission
-			w.WriteHeader(http.StatusUnauthorized) // 401 Unauthorized
-			return nil, !ok
-		} else {
-			// User can read existing files, but additional check for non-existent files requested with Create/Update permissions
-			if !a.Config.Users[authInfo.Username].Crud.Create || !a.Config.Users[authInfo.Username].Crud.Update {
-				// Get the requested file path
-				filePath := Resolve(ctx, req.URL.Path, Dir{a.Config})
-				log.WithFields(log.Fields{"user": authInfo.Username, "Path": filePath}).Debug("Header received")
-
-				// Check if the file exists (if not, user might be trying to open a non-existent file they shouldn't have access to)
-				// **Important note:** The previous code relied on `os.Stat` which can panic during custom WebDAV filesystem implementations. This revised approach avoids the panic potential.
-				_, err := os.Stat(filePath)
-				if err != nil {
-					if errors.Is(err, os.ErrNotExist) {
-						// File doesn't exist, and user lacks Create/Update permissions
-						if a.Config.Log.Create {
-							log.WithFields(log.Fields{
-								"path":       filePath,
-								"user":       authInfo.Username,
-								"User-Agent": req.Header.Get("User-Agent"),
-							}).Debug("User does not have the permission to open a non existant file that their operating system is attempting to find")
-							// Not authorized due to attempting to open a non-existent file with insufficient permissions
-							return nil, !ok
-						} else {
-							// For some other reason, the file doesn't exist, but the user has Create/Update permissions
-							return nil, !ok
-						}
-					}
-				}
-				return nil, ok
-			}
-
-			return nil, ok
+			w.WriteHeader(http.StatusUnauthorized)
+			return nil, false
 		}
+		filePath := Resolve(ctx, req.URL.Path, Dir{a.Config})
+		_, err := os.Stat(filePath)
+		if err != nil && errors.Is(err, os.ErrNotExist) {
+			if !a.Config.Users[authInfo.Username].Crud.Create && !a.Config.Users[authInfo.Username].Crud.Update {
+				log.WithFields(log.Fields{
+					"path": filePath,
+					"user": authInfo.Username,
+				}).Debug("File does not exist and user lacks write permissions")
+				return nil, false
+			}
+		}
+		return nil, true
 	case Mkol:
 		// Check user's "Create" permission for MKCOL
 		log.WithField("method", Mkol).Debug("Method received")
@@ -337,12 +319,11 @@ func handleHeadersForAuthorization(a *App, ctx context.Context, w http.ResponseW
 		log.WithField("method", Propatch).Debug("Method received")
 		return nil, ok
 	default:
-		// David has not implemented this method yet
-		log.WithField("method", req.Method).Debug("Method received")
-		return errors.New("This method condition hasn't been handled yet"), ok
+		log.WithField("method", req.Method).Debug("Method not implemented")
+		w.WriteHeader(http.StatusNotImplemented)
+		return errors.New("method not implemented"), false
 	}
-	w.WriteHeader(http.StatusNotImplemented)
-	return errors.New("no single method was received"), !ok
+	return nil, true
 }
 
 // handle methods not allowed
