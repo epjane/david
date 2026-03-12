@@ -176,28 +176,33 @@ Comprehensive phased plan to fix critical issues in the david WebDAV server proj
 
 ---
 
-## PHASE 4: DEPENDENCY UPDATES
+## PHASE 4: CLI MIGRATION TO COBRA AND VIPER
 
 **Status:** PENDING
 
-**Updates Needed:**
-```
-Go version: 1.21 → 1.22
-github.com/sirupsen/logrus: v1.6.0 → v1.9.3
-github.com/spf13/viper: v1.15.0 → v1.18.0
-golang.org/x/crypto: v0.14.0 → v0.17.0
-golang.org/x/net: v0.17.0 → v0.19.0
-golang.org/x/term: v0.13.0 → v0.15.0
-github.com/fsnotify/fsnotify: v1.6.0 → v1.7.0
-github.com/spf13/cobra: v1.6.1 → v1.8.0
-github.com/magefile/mage: v1.10.0 → v1.15.0
-```
+**See:** `PHASE_4.md` for detailed implementation plan
 
-**Commands:**
-```bash
-go get -u ./...
-go mod tidy
-```
+**Overview:**
+Migrate from `flag` package to `cobra` for:
+- Auto-generated `--help` documentation
+- Better subcommand support
+- Unified configuration (CLI flags + config file + environment variables)
+- Standard Go CLI patterns
+
+**Key Changes:**
+1. Root command for david server
+2. Server subcommand with flags
+3. BCPT passwd subcommand
+4. Viper for config management
+5. Environment variable support
+
+**Estimated Time:** 7-11 hours
+
+**Benefits:**
+- Better user experience with auto-generated help
+- Foundation for future CLI features (e.g., `david validate-config`)
+- Unified config loading
+- Standard patterns familiar to Go developers
 
 ---
 
@@ -272,12 +277,18 @@ go vet -v ./...
 
 ### Tests Results
 - All tests PASS ✓
-- Coverage: 52% (needs improvement to 90%+)
+- Coverage: 52% (target: 90%+)
 
-### Next Steps
-1. Add more comprehensive tests to reach 90% coverage
-2. Update dependencies
-3. Fix documentation
+### Completed Phases
+- Phase 1: ✓ Critical bug fixes
+- Phase 2: ✓ Code quality improvements
+- Phase 3: ✓ Test fixes (all tests now pass)
+
+### Next Phases
+1. ⏳ PHASE 4: CLI migration to Cobra/Viper (7-11 hours)
+2. ⏳ PHASE 4.1: Dependency updates (after CLI migration)
+3. ⏳ PHASE 5: Documentation updates
+4. ⏳ PHASE 3.3: Add comprehensive tests (90%+ coverage)
 
 ---
 
