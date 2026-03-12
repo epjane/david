@@ -322,6 +322,8 @@ david server --config config.yaml --hash-algorithm argon2
 | **scrypt** | High | High (~128MB) | 81.64 ms | 81.66 ms | GPU resistance |
 
 > **Note:** Benchmarks measured on Linux with Go 1.23, 100 iterations. Run `bcpt benchmark` to measure on your system.
+>
+> **About SHA:** We do not support SHA-256/SHA-512 for password hashing. These algorithms are designed for general-purpose hashing and are intentionally fast, making them unsuitable for passwords (see [issue #2](https://github.com/audstanley/david/issues/2)). For security, we recommend memory-hard algorithms like argon2 or bcrypt.
 
 **Notes:**
 - All three algorithms are memory-hard, providing resistance against GPU/ASIC attacks

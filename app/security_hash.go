@@ -1,4 +1,34 @@
 // HashAlgorithm interface and implementations
+//
+// This package implements secure password hashing algorithms for david.
+// We support bcrypt, argon2id, and scrypt - all memory-hard algorithms.
+//
+// Why we don't use SHA-256/SHA-512 for password hashing:
+//
+// SHA algorithms (SHA-256, SHA-512) are designed for general-purpose hashing
+// and are intentionally fast. This makes them unsuitable for password hashing
+// because:
+//
+//  1. Speed is a security risk: Fast hashes can be brute-forced quickly
+//     using GPU/ASIC clusters (see: https://github.com/audstanley/david/issues/2)
+//
+// 2. No built-in salting: SHA doesn't include salt, requiring manual implementation
+//
+// 3. No adaptive work factor: SHA can't be slowed down as hardware improves
+//
+//  4. Vulnerable to rainbow tables: Without proper salting, common passwords
+//     can be pre-computed and looked up
+//
+// Instead, we use memory-hard algorithms (bcrypt, argon2id, scrypt) that:
+// - Are intentionally slow (~65-85ms per hash)
+// - Require significant memory (~4KB-128MB), making GPU attacks expensive
+// - Include built-in salting
+// - Have configurable work factors that can be increased over time
+//
+// For more information on password hashing, see:
+// - OWASP Password Storage Cheat Sheet
+// - RFC 9106 (Argon2)
+// - RFC 7914 (scrypt)
 package app
 
 import (
