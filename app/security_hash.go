@@ -154,7 +154,15 @@ func (s *ScryptAlgorithm) Generate(password string, params interface{}) (string,
 		ScryptP: 1,
 	}
 	if hp, ok := params.(HashParams); ok {
-		p = hp
+		if hp.ScryptN > 0 {
+			p.ScryptN = hp.ScryptN
+		}
+		if hp.ScryptR > 0 {
+			p.ScryptR = hp.ScryptR
+		}
+		if hp.ScryptP > 0 {
+			p.ScryptP = hp.ScryptP
+		}
 	}
 
 	salt := make([]byte, 16)

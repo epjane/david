@@ -12,7 +12,7 @@ _david_ is a simple WebDAV server that provides the following features:
 - A simple user management which allows user-directory-jails as well as full admin access to
   all subdirectories.
 - Live config reload to allow editing of users without downtime.
-- A cli tool to generate BCrypt password hashes.
+- A CLI tool to generate password hashes (bcrypt, argon2, scrypt)
 
 It perfectly fits if you would like to give some people the possibility to upload, download or
 share files with common tools like the OSX Finder, Windows Explorer or Nautilus under Linux
@@ -313,13 +313,15 @@ Or override from CLI:
 david server --config config.yaml --hash-algorithm argon2
 ```
 
-**Security Comparison:**
+**Security Comparison (benchmarks on this system):**
 
-| Algorithm | Security | Memory | Speed | Best For |
-|-----------|----------|--------|-------|----------|
-| **bcrypt** | High | Low (~4KB) | ~100ms | General use, maximum compatibility |
-| **argon2** | Highest | High (~64MB) | ~50ms | Modern applications, recommended |
-| **scrypt** | High | High (~128MB) | ~75ms | GPU resistance |
+| Algorithm | Security | Memory | Speed (Hash Gen) | Speed (Verify) | Best For |
+|-----------|----------|--------|------------------|----------------|----------|
+| **bcrypt** | High | Low (~4KB) | 66.93 ms | 63.08 ms | General use, maximum compatibility |
+| **argon2** | Highest | High (~64MB) | 81.06 ms | <1 µs | Modern applications, recommended |
+| **scrypt** | High | High (~128MB) | 81.64 ms | 81.66 ms | GPU resistance |
+
+> **Note:** Benchmarks measured on Linux with Go 1.23, 100 iterations. Run `bcpt benchmark` to measure on your system.
 
 **Notes:**
 - All three algorithms are memory-hard, providing resistance against GPU/ASIC attacks
